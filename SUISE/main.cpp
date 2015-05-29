@@ -9,6 +9,7 @@ Scheme: seccurely updating index-based searchable encryption (SUISE)
 #include <cstdio>
 #include <fstream>
 #include <vector>
+#include <algorithm>
 
 #include <hex.h>
 #include <cmac.h>
@@ -193,7 +194,7 @@ public:
 		cout << "**** Client pass a empty search index to sercer ****" << endl;
 	}
 
-	void client_add_token()
+	void client_add_token() // read list file in ./Client/List and generate add token to ./Comm/AddToken
 	{
 		DIR *dp;
 		struct dirent *ep;
@@ -313,6 +314,9 @@ public:
 					}
 				}
 				delete[] buf;
+
+				sort(c_bar.begin(), c_bar.end());
+
 				cout << "Keyword number: " << keyword_number << endl;
 				token_header.keyword_number = keyword_number;
 				cout << "Token number: " << token_number << endl;
@@ -326,6 +330,16 @@ public:
 				else
 				{
 					file_obj.write((char*)&token_header, sizeof(struct AddTokenHeader)); // write header
+
+					for (int i = 0; i < c_bar.size(); i++)
+					{
+						file_obj << c_bar[i];
+					}
+
+					for (int i = 0; i < x_list.size(); i++)
+					{
+						file_obj << x_list[i];
+					}
 
 					file_obj.close();
 				}
