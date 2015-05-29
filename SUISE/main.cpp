@@ -191,7 +191,7 @@ public:
 	void client_gen()
 	{
 		memset(k1, 'K', KEY_LENGTH);
-		memset(k2, 'k', KEY_LENGTH);
+		//memset(k2, 'k', KEY_LENGTH);
 
 		cout << "**** Client pass a empty search index to sercer ****" << endl;
 	}
@@ -446,7 +446,7 @@ public:
 		}
 	}
 
-	void clien_search_token(string keyword)
+	string clien_search_token(string keyword)
 	{
 		string token = CMAC_AES_128(k1, KEY_LENGTH, keyword);
 		fstream file_h; // search history
@@ -456,26 +456,137 @@ public:
 		file_h.open(h_path, ios::out | ios::binary);
 		if (!file_h)
 			cerr << "Error: create search history file failed..." << endl;
+
+		return token;
 	}
 
 	void server_search(string search_token)
 	{
+		fstream index_file;
+		string index_path;
+		string hex_token = hex_encoder(search_token);
+		int ID_buf;
 
+		index_path = "./Server/InvertIndex/I_" + hex_token;
+		index_file.open(index_path, ios::in | ios::binary);
+		if (index_file)
+		{
+			cout << "Find invert index file: " << index_path << endl;
+			cout << "**** Search Result ****" << endl;
+			while (index_file.read((char*)&ID_buf, sizeof(ID_buf)))
+			{
+				cout << "File ID: " << ID_buf << endl;
+			}
+			index_file.close();
+		}
+		else
+		{
+			DIR *dp;
+			struct dirent *ep;
+			string cipher_path = "./Server/RegularIndex/";
+
+			dp = opendir(cipher_path.c_str());
+			if (dp != NULL)
+			{
+				fstream index_file;
+				string index_path;
+
+				char buf[CIPHER_LENGTH / 2];
+				string l, r, temp; // l: 密文前半段, r:密文後半段(random number)
+				vector<int> I; // the set of file ID including the keyword;
+				
+				string file_name;
+
+				readdir(dp); // .
+				readdir(dp); // ..
+				while (ep = readdir(dp))
+				{
+					printf("Search on: %s\n", ep->d_name);
+					file_name.assign(ep->d_name);
+					ID_buf = stoi(file_name.substr(2));
+					//cout << "File ID: " << ID_buf << endl;
+
+					index_path = cipher_path;
+					index_path.append(ep->d_name);
+					index_file.open(index_path, ios::in | ios::binary);
+					if (!index_file)
+					{
+						cerr << "Error: open regular index file: " << index_path << " failed..." << endl;
+						continue;
+					}
+
+					while (index_file.read(buf, CIPHER_LENGTH / 2)) // 讀取前半段
+					{
+						l.assign(buf, CIPHER_LENGTH / 2);
+
+						index_file.read(buf, CIPHER_LENGTH / 2); // 讀取後半段
+						r.assign(buf, CIPHER_LENGTH / 2);
+
+						temp = HMAC_SHA_256((byte*)search_token.c_str(), search_token.size(), r);
+						if (temp.compare(l) == 0)
+						{
+							cout << "Find!" << endl;
+							I.push_back(ID_buf);
+						}
+					}
+
+					index_file.close();
+				}
+
+				if (I.size() != 0)
+				{
+					cout << "**** Search Result ****" << endl;
+					for (int i = 0; i < I.size(); i++)
+					{
+						cout << "File ID: " << I[i] << endl;
+					}
+
+					/* Build Invert Index */
+					index_path = "./Server/InvertIndex/I_";
+					index_path.append(hex_encoder(search_token));
+					cout << "Create invert index file: " << index_path << endl;
+					index_file.open(index_path, ios::out | ios::binary);
+					if (!index_file)
+					{
+						cerr << "Error: open failed..." << endl;
+					}
+					else
+					{
+
+						for (int i = 0; i < I.size(); i++)
+						{
+							cout << "Add file ID: " << I[i] << " to the index" << endl;
+							ID_buf = I[i];
+							index_file.write((char*)&ID_buf, sizeof(ID_buf));
+						}
+						index_file.close();
+					}
+					/* Build Invert Index */
+				}
+			}
+		}
 	}
 
-private:
-	byte k1[KEY_LENGTH], k2[KEY_LENGTH];
+	private:
+		byte k1[KEY_LENGTH];
+		//byte k2[KEY_LENGTH];
 };
 
 
 int main()
 {
 	SUISE SUISE_obj;
-	SUISE_obj.clien_search_token("w1");
-	//SUISE_obj.clien_search_token("w2");
+	string token;
+	token = SUISE_obj.clien_search_token("w1");
 	SUISE_obj.client_add_token();
 	SUISE_obj.server_add();
+	SUISE_obj.server_search(token);
 
+	token = SUISE_obj.clien_search_token("w2");
+	SUISE_obj.server_search(token);
+
+	SUISE_obj.server_search(token);
+	
 	system("PAUSE");
 	return 0;
 }
