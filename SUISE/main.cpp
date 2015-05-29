@@ -20,6 +20,8 @@ Scheme: seccurely updating index-based searchable encryption (SUISE)
 
 #define KEY_LENGTH 32
 #define MAX_KEYWORD_LENGTH 32
+#define SEARCH_TOKEN_LENGTH 16
+#define CIPHER_LENGTH 64
 
 #pragma comment(lib, "cryptlib.lib")
 
@@ -200,9 +202,6 @@ public:
 		struct dirent *ep;
 		string list_path = "./Client/List/";
 		
-		fstream file_obj;
-		string path;
-		
 		dp = opendir(list_path.c_str()); // for each file f, create a list f_bar of unique keyword
 		if (dp != NULL)
 		{
@@ -218,6 +217,9 @@ public:
 			string token_hex;
 			vector<string> x_list; // for store the search token was used for previous search
 			vector<string> c_bar; //for store cipher
+
+			fstream file_obj;
+			string path;
 			
 			int keyword_number = 0, token_number = 0; // for AddTokenHeader
 			struct AddTokenHeader token_header;
@@ -350,6 +352,100 @@ public:
 		}
 	}
 
+	void server_add()
+	{
+		DIR *dp;
+		struct dirent *ep;
+		string token_path = "./Comm/AddToken/";
+
+		dp = opendir(token_path.c_str());
+		if (dp != NULL)
+		{
+			int token_number = 0;
+			struct AddTokenHeader token_header;
+			
+			fstream file_obj, index_file;
+			string path, index_path;
+
+			char buf[CIPHER_LENGTH];
+			string buf_str;
+
+			while (ep = readdir(dp))
+			{
+				//printf("%s\n", ep->d_name);
+				token_number++;
+			}
+			token_number = token_number - 2; // 扣掉當前目錄和上層目錄
+			cout << "**** We have " << token_number << " add token ****" << endl;
+
+			rewinddir(dp);
+			readdir(dp); // .
+			readdir(dp); // ..
+
+			while (ep = readdir(dp))
+			{
+				printf("Add Token file: %s\n", ep->d_name);
+
+				path.clear();
+				path = token_path + path.assign(ep->d_name);
+				file_obj.open(path, ios::in | ios::binary);
+				if (!file_obj)
+					cerr << "Error: open add token file: " << path << " failed..." << endl;
+				else
+				{
+					file_obj.read((char*)&token_header, sizeof(token_header));
+					cout << "                   File ID: " << token_header.file_ID << endl;
+					cout << "     The number of keyword: " << token_header.keyword_number << endl;
+					cout << "The number of search token: " << token_header.token_number << endl;
+
+					/* Build Regular Index */
+					memset(buf, 0, CIPHER_LENGTH);
+					index_path = "./Server/RegularIndex/R_" + to_string(token_header.file_ID);
+					index_file.open(index_path, ios::out | ios::binary);
+					for (int i = 0; i < token_header.keyword_number; i++)
+					{
+						file_obj.read(buf, CIPHER_LENGTH);
+						index_file.write(buf, CIPHER_LENGTH);
+					}
+					index_file.close();
+					/* Build Regular Index */
+
+					/* Build Invert Index */
+					for (int i = 0; i < token_header.token_number; i++) // for each search token
+					{
+						memset(buf, 0, CIPHER_LENGTH);
+						file_obj.read(buf, SEARCH_TOKEN_LENGTH);
+						buf_str.assign(buf, SEARCH_TOKEN_LENGTH);
+						index_path = "./Server/InvertIndex/I_";
+						index_path.append(hex_encoder(buf_str));
+						cout << "Open invert index file: " << index_path << endl;
+						index_file.open(index_path, ios::out | ios::in | ios::binary);
+						if (!index_file)
+						{
+							index_file.open(index_path, ios::out | ios::binary);
+							if (!index_file)
+							{
+								cerr << "Error: open failed..." << endl;
+								continue;
+							}
+						}
+						index_file.seekp(0, index_file.end);
+
+						cout << "Add file ID: " << token_header.file_ID << " to the index" << endl;
+						index_file.write((char*)&token_header.file_ID, sizeof(token_header.file_ID));
+						//index_file << '\n';
+						index_file.close();
+					}
+					/* Build Invert Index */
+
+					file_obj.close();
+				}
+				
+				cout << endl;
+			}
+		}
+	}
+
 	void clien_search_token(string keyword)
 	{
 		string token = CMAC_AES_128(k1, KEY_LENGTH, keyword);
@@ -357,6 +453,14 @@ public:
 		string h_path = "./Client/History/";
 		h_path.append(hex_encoder(token));
 		cout << "**** Generate a search token and stroe search histroy: " << h_path << " ****" << endl;
+		file_h.open(h_path, ios::out | ios::binary);
+		if (!file_h)
+			cerr << "Error: create search history file failed..." << endl;
+	}
+
+	void server_search(string search_token)
+	{
+
 	}
 
 private:
@@ -368,9 +472,9 @@ int main()
 {
 	SUISE SUISE_obj;
 	SUISE_obj.clien_search_token("w1");
-	SUISE_obj.clien_search_token("w2");
-	SUISE_obj.clien_search_token("w3");
+	//SUISE_obj.clien_search_token("w2");
 	SUISE_obj.client_add_token();
+	SUISE_obj.server_add();
 
 	system("PAUSE");
 	return 0;
