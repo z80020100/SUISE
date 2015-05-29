@@ -567,6 +567,11 @@ public:
 		}
 	}
 
+	void server_delete(int file_ID)
+	{
+
+	}
+
 	private:
 		byte k1[KEY_LENGTH];
 		//byte k2[KEY_LENGTH];
