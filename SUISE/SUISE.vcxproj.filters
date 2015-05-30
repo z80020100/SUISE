@@ -24,4 +24,9 @@
       <Filter>標頭檔</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Clear.bat">
+      <Filter>原始程式檔</Filter>
+    </None>
+  </ItemGroup>
 </Project>

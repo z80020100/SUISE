@@ -72,6 +72,9 @@
   <ItemGroup>
     <ClInclude Include="AES_RNG.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Clear.bat" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
