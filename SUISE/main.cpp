@@ -698,9 +698,10 @@ public:
 		if (index_file)
 		{
 			//cout << "Found invert index file: " << index_path << endl << endl;
-			log_file << "Found invert index file: " << index_path << endl << endl;
+			//log_file << "Found invert index file: " << index_path << endl << endl;
 			//cout << "**** Search Result ****" << endl;
 			log_file << "**** Search Result ****" << endl;
+			log_file << "for token: " << hex_token << endl;
 			while (index_file.read((char*)&ID_buf, sizeof(ID_buf)))
 			{
 				//cout << "File ID: " << ID_buf << endl;
@@ -708,7 +709,7 @@ public:
 			}
 			index_file.close();
 			//cout << "***********************" << endl;
-			log_file << "***********************" << endl;
+			log_file << "***********************" << endl << endl;
 		}
 		else
 		{
@@ -733,7 +734,7 @@ public:
 				while (ep = readdir(dp))
 				{
 					//printf("Search on: %s\n", ep->d_name);
-					log_file << "Search on: " << ep->d_name << endl;
+					//log_file << "Search on: " << ep->d_name << endl;
 					file_name.assign(ep->d_name);
 					ID_buf = stoi(file_name.substr(2));
 					//cout << "File ID: " << ID_buf << endl;
@@ -772,7 +773,7 @@ public:
 					index_path = "./Server/InvertIndex/I_";
 					index_path.append(hex_encoder(search_token));
 					//cout << "Create invert index file: " << index_path << endl;
-					log_file << "Create invert index file: " << index_path << endl;
+					//log_file << "Create invert index file: " << index_path << endl;
 					index_file.open(index_path, ios::out | ios::binary);
 					if (!index_file)
 					{
@@ -785,7 +786,7 @@ public:
 						for (int i = 0; i < I.size(); i++)
 						{
 							//cout << "Add file ID: " << I[i] << " to the index" << endl;
-							log_file << "Add file ID: " << I[i] << " to the index" << endl;
+							//log_file << "Add file ID: " << I[i] << " to the index" << endl;
 							ID_buf = I[i];
 							index_file.write((char*)&ID_buf, sizeof(ID_buf));
 						}
@@ -796,13 +797,14 @@ public:
 					/* Show the search result */
 					//cout << "**** Search Result ****" << endl;
 					log_file << "**** Search Result ****" << endl;
+					log_file << "for token: " << hex_token << endl;
 					for (int i = 0; i < I.size(); i++)
 					{
 						//cout << "File ID: " << I[i] << endl;
 						log_file << "File ID: " << I[i] << endl;
 					}
 					//cout << "***********************" << endl;
-					log_file << "***********************" << endl;
+					log_file << "***********************" << endl << endl;
 					/* Show the search result */
 				}
 				else
@@ -811,8 +813,9 @@ public:
 					//cout << "!!	NOT FOUND	!!" << endl;
 					//cout << "***********************" << endl;
 					log_file << "**** Search Result ****" << endl;
+					log_file << "for token: " << hex_token << endl;
 					log_file << "!!	NOT FOUND	!!" << endl;
-					log_file << "***********************" << endl;
+					log_file << "***********************" << endl << endl;
 				}
 			}
 		}
@@ -830,12 +833,12 @@ public:
 			cerr << "Error: create log file " << log_path << " failed..." << endl;
 
 
-		cout << "**** The file ID: " << file_ID << " on server will be deleted ****" << endl;
+		//cout << "**** The file ID: " << file_ID << " on server will be deleted ****" << endl;
 		log_file << "**** The file ID: " << file_ID << " on server will be deleted ****" << endl;
 		
 		/* Delete from regular index */
 		string file_path = "./Server/RegularIndex/R_" + to_string(file_ID);
-		cout << "**** Delete " << file_path << " ****" << endl;
+		//cout << "**** Delete " << file_path << " ****" << endl;
 		log_file << "**** Delete " << file_path << " ****" << endl;
 		if (remove(file_path.c_str()) != 0)
 		{
@@ -863,10 +866,11 @@ public:
 			readdir(dp); // ..
 			while (ep = readdir(dp))
 			{
+				new_ID_list.clear();
 				renew = 0;
 				index_path = "./Server/InvertIndex/";
 				index_path.append(ep->d_name);
-				cout << "Search file ID on: " << index_path << endl;
+				//cout << "Search file ID on: " << index_path << endl;
 				log_file << "Search file ID on: " << index_path << endl;
 				index_file.open(index_path, ios::in | ios::binary);
 				if (!index_file)
@@ -879,7 +883,7 @@ public:
 				{
 					if (ID_buf == file_ID)
 					{
-						cout << "**** Find file ID in index: " << index_path << " ****" << endl;
+						//cout << "**** Find file ID in index: " << index_path << " ****" << endl;
 						log_file << "**** Find file ID in index: " << index_path << " ****" << endl;
 						renew = 1;
 					}
@@ -892,7 +896,7 @@ public:
 
 				if (renew == 1)
 				{
-					cout << "**** Update invert index: " << index_path << " ****" << endl;
+					//cout << "**** Update invert index: " << index_path << " ****" << endl;
 					log_file << "**** Update invert index: " << index_path << " ****" << endl;
 					index_file.open(index_path, ios::out | ios::trunc | ios::binary);
 					if (!index_file)
@@ -912,7 +916,7 @@ public:
 				}
 				else
 				{
-					cout << "**** Do not need to update ****" << endl;
+					//cout << "**** Do not need to update ****" << endl;
 					log_file << "**** Do not need to update ****" << endl;
 				}
 			}
